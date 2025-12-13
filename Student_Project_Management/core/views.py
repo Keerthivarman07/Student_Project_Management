@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
-
+from django.db import models
 from .models import User, StudentProfile, Invitation, Team
 
 
@@ -49,6 +49,13 @@ def student_dashboard(request):
     is_leader = Team.objects.filter(team_leader=student).exists()
     is_member = Team.objects.filter(members=student).exists()
     already_in_team = is_leader or is_member
+        # find team where this student is leader or member
+    team = None
+    if already_in_team:
+        team = Team.objects.filter(team_leader=student).first()
+        if team is None:
+            team = Team.objects.filter(members=student).first()
+
 
     # invitations received by this student
     received_invites = Invitation.objects.filter(
@@ -61,10 +68,59 @@ def student_dashboard(request):
     ).order_by("-created_at")
 
     # count of invitations this student has accepted
+        # invitations sent by this student that were accepted
     accepted_invites_count = Invitation.objects.filter(
-        to_student=student,
+        from_student=student,
         status="ACCEPTED",
     ).count()
+
+    accepted_invites = Invitation.objects.filter(
+        from_student=student,
+        status="ACCEPTED",
+    ).select_related("to_student", "to_student__user")
+
+    if request.method == "POST":
+        team_name = request.POST.get("team_name", "").strip()
+        member_ids = request.POST.getlist("member_ids")
+
+        if not team_name:
+            messages.error(request, "Team name is required.")
+            return redirect("create_team")
+
+        if len(member_ids) != 3:
+            messages.error(request, "You must select exactly 3 members.")
+            return redirect("create_team")
+
+        # load selected members
+        members = StudentProfile.objects.filter(id__in=member_ids)
+
+        if members.count() != 3:
+            messages.error(request, "Some selected students were not found.")
+            return redirect("create_team")
+
+        # safety: ensure none of them is already in another team
+        conflict = Team.objects.filter(
+            models.Q(team_leader__in=members) | models.Q(members__in=members)
+        ).exists()
+        if conflict:
+            messages.error(request, "One of the selected members is already in another team.")
+            return redirect("create_team")
+
+        # create team
+        team = Team.objects.create(
+            name=team_name,
+            team_leader=student,
+            department=student.department,
+            batch=student.batch,
+            class_section=student.class_section,
+        )
+        team.members.set(list(members) + [student])  # include leader as member too
+        team.save()
+
+        messages.success(request, "Team created successfully.")
+        return redirect("student_dashboard")
+
+
 
     # temporary flag: later we will also check team membership here
     can_create_team = (accepted_invites_count >= 3) and (not already_in_team)
@@ -76,6 +132,7 @@ def student_dashboard(request):
         "accepted_invites_count": accepted_invites_count,
         "can_create_team": can_create_team,
         "already_in_team":already_in_team,
+        "team":team,
     }
     return render(request, "dashboards/student_dashboard.html", context)
 
@@ -195,19 +252,67 @@ def create_team_view(request):
     already_in_team = is_leader or is_member
 
     accepted_invites_count = Invitation.objects.filter(
-        to_student=student,
+        from_student=student,
         status="ACCEPTED",
     ).count()
+
+    accepted_invites = Invitation.objects.filter(
+        from_student=student,
+        status="ACCEPTED",
+    ).select_related("to_student", "to_student__user")
+
 
     can_create_team = (accepted_invites_count >= 3) and (not already_in_team)
 
     if not can_create_team:
         messages.error(request, "You are not allowed to create a team.")
         return redirect("student_dashboard")
+    
+    # NEW: handle form submit
+    if request.method == "POST":
+        team_name = request.POST.get("team_name", "").strip()
+        member_ids = request.POST.getlist("member_ids")
+
+        if not team_name:
+            messages.error(request, "Team name is required.")
+            return redirect("create_team")
+
+        if len(member_ids) < 2 or len(member_ids) > 3:
+            messages.error(request, "You must select 2 or 3 members.")
+            return redirect("create_team")
+
+        members = StudentProfile.objects.filter(id__in=member_ids)
+        if members.count() != len(member_ids):
+            messages.error(request, "Some selected students were not found.")
+            return redirect("create_team")
+
+
+        conflict = Team.objects.filter(
+            models.Q(team_leader__in=members) | models.Q(members__in=members)
+        ).exists()
+        if conflict:
+            messages.error(request, "One of the selected members is already in another team.")
+            return redirect("create_team")
+
+        team = Team.objects.create(
+            name=team_name,
+            team_leader=student,
+            department=student.department,
+            batch=student.batch,
+            class_section=student.class_section,
+        )
+        # include leader plus 3 members
+        team.members.set(list(members) + [student])
+        team.save()
+
+        messages.success(request, "Team created successfully.")
+        return redirect("student_dashboard")
+
 
     # TEMP: simple placeholder
     return render(request, "dashboards/create_team.html", {
         "student": student,
         "accepted_invites_count": accepted_invites_count,
+        "accepted_invites":accepted_invites,
     })
 
