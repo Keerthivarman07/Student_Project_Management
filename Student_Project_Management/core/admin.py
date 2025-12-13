@@ -5,6 +5,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User
 
+from .models import Department, Batch, ClassSection, FacultyProfile, StudentProfile
+
+from .models import Team, Invitation, ProjectProposal
+
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
@@ -16,7 +20,7 @@ class CustomUserAdmin(UserAdmin):
         ("Role information", {"fields": ("user_type",)}),
     )
 
-from .models import Department, Batch, ClassSection, FacultyProfile, StudentProfile
+
 
 
 @admin.register(Department)
@@ -46,3 +50,21 @@ class FacultyProfileAdmin(admin.ModelAdmin):
 class StudentProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "roll_number", "department", "class_section", "batch", "semester")
     list_filter = ("department", "class_section", "batch", "semester")
+
+
+@admin.register(Team)
+class TeamAdmin(admin.ModelAdmin):
+    list_display = ("name", "department", "class_section", "batch", "team_leader", "mentor", "coordinator", "is_approved")
+    list_filter = ("department", "class_section", "batch", "is_approved")
+
+
+@admin.register(Invitation)
+class InvitationAdmin(admin.ModelAdmin):
+    list_display = ("from_student", "to_student", "status", "created_at")
+    list_filter = ("status",)
+
+
+@admin.register(ProjectProposal)
+class ProjectProposalAdmin(admin.ModelAdmin):
+    list_display = ("title", "team", "status", "preferred_mentor", "created_at")
+    list_filter = ("status", "team__department")
