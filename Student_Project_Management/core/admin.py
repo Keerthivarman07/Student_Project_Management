@@ -15,3 +15,34 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("Role information", {"fields": ("user_type",)}),
     )
+
+from .models import Department, Batch, ClassSection, FacultyProfile, StudentProfile
+
+
+@admin.register(Department)
+class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ("name", "full_name")
+    search_fields = ("name", "full_name")
+
+
+@admin.register(Batch)
+class BatchAdmin(admin.ModelAdmin):
+    list_display = ("name", "start_year", "end_year")
+
+
+@admin.register(ClassSection)
+class ClassSectionAdmin(admin.ModelAdmin):
+    list_display = ("name", "department", "batch")
+    list_filter = ("department", "batch")
+
+
+@admin.register(FacultyProfile)
+class FacultyProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "employee_id", "department", "is_hod")
+    list_filter = ("department", "is_hod")
+
+
+@admin.register(StudentProfile)
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "roll_number", "department", "class_section", "batch", "semester")
+    list_filter = ("department", "class_section", "batch", "semester")
