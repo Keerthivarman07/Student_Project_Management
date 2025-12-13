@@ -5,12 +5,9 @@ from django.urls import reverse
 
 from .models import User
 
-<<<<<<< HEAD
 def home(request):
     return redirect(reverse("core:login"))
 
-=======
->>>>>>> 0741987caed5e00f76a6253a69faa9d329b778ec
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -19,7 +16,6 @@ def login_view(request):
         if user is not None:
             login(request, user)
             return redirect(reverse("core:dashboard_redirect"))
-            return redirect("dashboard_redirect")  # no change here
     return render(request, "auth/login.html")
 
 
