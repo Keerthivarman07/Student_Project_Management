@@ -16,16 +16,9 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path
-from core import views as core_views
+from django.urls import path,include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", core_views.login_view, name="login"),  # root shows login
-    path("logout/", core_views.logout_view, name="logout"),
-    path("home/", core_views.dashboard_redirect, name="dashboard_redirect"),
-    path("student/dashboard/", core_views.student_dashboard, name="student_dashboard"),
-    path("faculty/dashboard/", core_views.faculty_dashboard, name="faculty_dashboard"),
-    path("hod/dashboard/", core_views.hod_dashboard, name="hod_dashboard"),
+    path("",include("core.urls")),
 ]
-

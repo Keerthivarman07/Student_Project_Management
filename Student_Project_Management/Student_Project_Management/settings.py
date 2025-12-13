@@ -77,8 +77,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "student_project_db",
-        "USER": "fyp_user",
-        "PASSWORD": "StrongPassword123!",
+        "USER": "root",
+        "PASSWORD": "Keerthi_07",
         "HOST": "localhost",
         "PORT": "3306",
         "OPTIONS": {
@@ -126,3 +126,5 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 AUTH_USER_MODEL = "core.User"
+
+LOGIN_URL = "/login/"
